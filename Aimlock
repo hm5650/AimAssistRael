@@ -14,6 +14,7 @@ end
 
 ShowNotification("Made By hmmm5650", "haxcz😎", 5)
 task.wait()
+
 local player = game.Players.LocalPlayer
 local userInputService = game:GetService("UserInputService")
 local runService = game:GetService("RunService")
@@ -71,6 +72,27 @@ local function isEnemy(otherPlayer)
     end
 end
 
+local function isVisible(targetPosition, targetCharacter)
+    local localCharacter = player.Character
+    if not localCharacter then return false end
+    local localRoot = localCharacter:FindFirstChild("HumanoidRootPart")
+    if not localRoot then return false end
+
+    -- Raycast from the local player to the target position
+    local ray = Ray.new(localRoot.Position, (targetPosition - localRoot.Position).Unit * 1000)
+    local hit, position = workspace:FindPartOnRay(ray, localCharacter)
+
+    -- If the ray hits something, check if it's the target
+    if hit then
+        if hit:IsDescendantOf(targetCharacter) then
+            return true -- No wall in between
+        else
+            return false -- Wall detected
+        end
+    end
+    return false
+end
+
 local function findNearestPlayer()
     local nearestPlayer = nil
     local shortestDistance = math.huge
@@ -85,7 +107,7 @@ local function findNearestPlayer()
             local rootPart = character:FindFirstChild("HumanoidRootPart")
             if rootPart then
                 local distance = (localRoot.Position - rootPart.Position).Magnitude
-                if distance < shortestDistance then
+                if distance < shortestDistance and isVisible(rootPart.Position, character) then
                     shortestDistance = distance
                     nearestPlayer = otherPlayer
                 end
@@ -104,7 +126,11 @@ runService.RenderStepped:Connect(function()
                 -- Adjust the player's aim (this is game-specific and may require additional logic)
                 local camera = workspace.CurrentCamera
                 if camera then
-                    camera.CFrame = CFrame.lookAt(camera.CFrame.Position, targetRoot.Position)
+                    -- Smoothly adjust the camera to look at the target
+                    local targetPosition = targetRoot.Position
+                    local cameraPosition = camera.CFrame.Position
+                    local newCFrame = CFrame.new(cameraPosition, targetPosition)
+                    camera.CFrame = camera.CFrame:Lerp(newCFrame, 0.3) -- Smooth transition
                 end
             end
         end
